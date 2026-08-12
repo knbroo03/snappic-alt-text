@@ -7,7 +7,7 @@ No external assets, no localStorage — safe to serve as-is.
 
 from __future__ import annotations
 
-from .config import Settings
+from config import Settings
 
 _PAGE = r"""<!DOCTYPE html>
 <html lang="en">

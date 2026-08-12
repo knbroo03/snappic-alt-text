@@ -10,8 +10,8 @@ import base64
 
 from anthropic import Anthropic
 
-from .config import Settings
-from .media import PreparedImage
+from config import Settings
+from media import PreparedImage
 
 _SYSTEM = (
     "You write alt-text descriptions of photo-booth pictures for blind and "

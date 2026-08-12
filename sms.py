@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from twilio.rest import Client
 
-from .config import Settings
+from config import Settings
 
 
 class SmsError(Exception):

@@ -18,7 +18,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 
-from .config import Settings
+from config import Settings
 
 
 def verify_webhook(settings: Settings, raw_body: bytes, header_value: str | None) -> bool:

@@ -6,7 +6,7 @@ from collections.abc import Iterator
 
 from sqlmodel import Session, SQLModel, create_engine
 
-from .config import get_settings
+from config import get_settings
 
 _settings = get_settings()
 
@@ -23,7 +23,7 @@ engine = create_engine(_settings.database_url, connect_args=_connect_args)
 def init_db() -> None:
     """Create tables if they do not exist. Safe to call on every startup."""
     # Import models so SQLModel registers them before create_all.
-    from . import models  # noqa: F401
+    import models  # noqa: F401
 
     SQLModel.metadata.create_all(engine)
 

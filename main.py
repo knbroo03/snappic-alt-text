@@ -18,14 +18,14 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
-from . import __version__
-from .config import get_settings
-from .dashboard import render_dashboard
-from .db import engine, init_db
-from .models import MediaSession
-from .processing import Services, force_deliver, handle_capture, handle_share
-from .schemas import CaptureEvent, ShareEvent
-from .security import verify_webhook
+__version__ = "1.0.0"
+from config import get_settings
+from dashboard import render_dashboard
+from db import engine, init_db
+from models import MediaSession
+from processing import Services, force_deliver, handle_capture, handle_share
+from schemas import CaptureEvent, ShareEvent
+from security import verify_webhook
 
 settings = get_settings()
 
