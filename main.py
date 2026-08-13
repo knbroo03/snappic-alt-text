@@ -145,26 +145,40 @@ async def _read_and_verify(request: Request, signature: str | None) -> dict:
     return payload
 
 
+def _dispatch(payload: dict, background: BackgroundTasks) -> str | None:
+    """Act on a Snappic webhook.
+
+    Snappic sends a single event that can contain BOTH the captured media (to
+    describe) and the recipient (to text), so we parse for both and act on
+    whatever is present. Works whether Snappic sends one combined event or two
+    separate ones.
+    """
+    cap = CaptureEvent(payload)
+    sh = ShareEvent(payload)
+    session_id = cap.session_id or sh.session_id
+    acted = False
+    if cap.is_valid:  # there's media -> download + describe (+ deliver if ready)
+        background.add_task(handle_capture, cap, services)
+        acted = True
+    if sh.is_valid and (sh.phone or sh.email):  # there's a recipient -> deliver
+        background.add_task(handle_share, sh, services)
+        acted = True
+    return session_id if acted else None
+
+
 @app.post("/webhooks/snappic/session")
 async def snappic_session(
     request: Request,
     background: BackgroundTasks,
 ) -> JSONResponse:
-    """Fired when media is captured. We caption it here."""
+    """Snappic webhook endpoint (capture and/or share)."""
     signature = request.headers.get(settings.snappic_signature_header)
     payload = await _read_and_verify(request, signature)
-
-    event = CaptureEvent(payload)
-    if not event.is_valid:
-        log.warning("session webhook missing session_id or media_url: %s", payload)
-        # 200 so Snappic doesn't retry a payload we simply can't use.
-        return JSONResponse(
-            {"status": "ignored", "reason": "missing session_id or media_url"},
-            status_code=200,
-        )
-
-    background.add_task(handle_capture, event, services)
-    return JSONResponse({"status": "accepted", "session_id": event.session_id})
+    session_id = _dispatch(payload, background)
+    if session_id is None:
+        log.warning("session webhook: nothing actionable in payload: %s", payload)
+        return JSONResponse({"status": "ignored"}, status_code=200)
+    return JSONResponse({"status": "accepted", "session_id": session_id})
 
 
 @app.post("/webhooks/snappic/share")
@@ -172,19 +186,14 @@ async def snappic_share(
     request: Request,
     background: BackgroundTasks,
 ) -> JSONResponse:
-    """Fired when the guest shares/receives the media. We deliver the text here."""
+    """Snappic webhook endpoint (share and/or capture — same handling)."""
     signature = request.headers.get(settings.snappic_signature_header)
     payload = await _read_and_verify(request, signature)
-
-    event = ShareEvent(payload)
-    if not event.is_valid:
-        log.warning("share webhook missing session_id: %s", payload)
-        return JSONResponse(
-            {"status": "ignored", "reason": "missing session_id"}, status_code=200
-        )
-
-    background.add_task(handle_share, event, services)
-    return JSONResponse({"status": "accepted", "session_id": event.session_id})
+    session_id = _dispatch(payload, background)
+    if session_id is None:
+        log.warning("share webhook: nothing actionable in payload: %s", payload)
+        return JSONResponse({"status": "ignored"}, status_code=200)
+    return JSONResponse({"status": "accepted", "session_id": session_id})
 
 
 # --------------------------------------------------------------------------
