@@ -5,6 +5,7 @@ from __future__ import annotations
 import hmac
 import json
 import logging
+from collections import deque
 
 from fastapi import (
     BackgroundTasks,
@@ -46,6 +47,10 @@ app = FastAPI(
 
 # One shared Services container for the process (clients are reused).
 services = Services(settings=settings)
+
+# Ring buffer of the most recent raw webhook payloads, newest first — used to
+# inspect exactly what Snappic sends (see GET /admin/debug/payloads).
+RECENT_PAYLOADS: deque = deque(maxlen=25)
 
 # --------------------------------------------------------------------------
 # Admin auth (HTTP Basic) — protects the dashboard and guest-data endpoints
@@ -111,6 +116,12 @@ def healthz() -> dict:
     return {"status": "ok"}
 
 
+@app.get("/admin/debug/payloads", dependencies=[Depends(require_admin)])
+def debug_payloads() -> list:
+    """The most recent raw webhook payloads (newest first). For diagnosing format."""
+    return list(RECENT_PAYLOADS)
+
+
 # --------------------------------------------------------------------------
 # Webhooks
 # --------------------------------------------------------------------------
@@ -126,8 +137,11 @@ async def _read_and_verify(request: Request, signature: str | None) -> dict:
         raise HTTPException(status_code=400, detail="invalid JSON") from exc
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="payload must be a JSON object")
-    if settings.log_level.upper() == "DEBUG":
-        log.debug("Webhook payload: %s", json.dumps(payload)[:2000])
+    try:
+        RECENT_PAYLOADS.appendleft({"path": request.url.path, "payload": payload})
+    except Exception:  # noqa: BLE001
+        pass
+    log.info("RAW webhook %s: %s", request.url.path, json.dumps(payload)[:2000])
     return payload
 
 
