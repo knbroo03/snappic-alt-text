@@ -22,7 +22,7 @@ _SYSTEM = (
     "setting, and any obvious props, costumes, or overlay text.\n"
     "- Be concrete and specific, but do not invent details you cannot see.\n"
     "- Do NOT start with 'image of', 'photo of', 'a picture of', or similar.\n"
-    "-     "- Do not guess anyone's name, identity, age, gender, race, or relationships. Describe people in gender-neutral terms such as a person, a guest, two people, or someone in a red jacket, and never call anyone a man, woman, boy, or girl based on how they look."
+    "- Do not guess names, identities, ages, genders, races, or relationships. Describe people in gender-neutral terms such as a person, a guest, two people, or someone in a red jacket, and never call anyone a man, woman, boy, or girl based on how they look.\n"
     "- If readable text or signage appears in the image, include it in quotes.\n"
     "- Warm, plain language. No emojis. Output ONLY the description sentence."
 )
